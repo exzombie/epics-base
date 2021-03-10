@@ -155,48 +155,42 @@ static void test_value_filter(const chFilterPlugin *plug, const char *chan_name,
     dbChannelDelete(pch);
 }
 
-int tc_noop(const db_field_log *pfl) { return 1; }
-
-int vc_noop(const db_field_log *pfl, const epicsTimeStamp *ts) {
-    return 1;
-}
-
-int type_check_float(const db_field_log *pfl) {
+static int type_check_float(const db_field_log *pfl) {
     return pfl->type == dbfl_type_val
         && pfl->field_type == DBR_DOUBLE
         && pfl->field_size == sizeof(epicsFloat64)
         && pfl->no_elements == 1;
 }
 
-int value_check_float(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_float(const db_field_log *pfl, const epicsTimeStamp *ts) {
     epicsFloat64 flt = pfl->u.v.field.dbf_double;
     epicsFloat64 nsec = (flt - (epicsUInt32)(flt)) * 1e9;
     return ts->secPastEpoch == (epicsUInt32)(flt)
         && fabs(ts->nsec - nsec) < 1000.; /* allow loss of precision */
 }
 
-int type_check_sec_nsec(const db_field_log *pfl) {
+static int type_check_sec_nsec(const db_field_log *pfl) {
     return pfl->type == dbfl_type_val
         && pfl->field_type == DBR_ULONG
         && pfl->field_size == sizeof(epicsUInt32)
         && pfl->no_elements == 1;
 }
 
-int value_check_sec(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_sec(const db_field_log *pfl, const epicsTimeStamp *ts) {
     return ts->secPastEpoch == pfl->u.v.field.dbf_ulong;
 }
 
-int value_check_nsec(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_nsec(const db_field_log *pfl, const epicsTimeStamp *ts) {
     return ts->nsec == pfl->u.v.field.dbf_ulong;
 }
 
-int type_check_array(const db_field_log *pfl) {
+static int type_check_array(const db_field_log *pfl) {
     return pfl->field_type == DBR_ULONG
         && pfl->field_size == sizeof(epicsUInt32)
         && pfl->no_elements == 2;
 }
 
-int value_check_array(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_array(const db_field_log *pfl, const epicsTimeStamp *ts) {
     epicsUInt32 *arr = (epicsUInt32*)pfl->u.r.field;
     return pfl->type == dbfl_type_ref
         && pfl->u.r.field != NULL
@@ -206,7 +200,7 @@ int value_check_array(const db_field_log *pfl, const epicsTimeStamp *ts) {
         && ts->nsec == arr[1];
 }
 
-int value_check_unix(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_unix(const db_field_log *pfl, const epicsTimeStamp *ts) {
     epicsUInt32 *arr = (epicsUInt32 *)pfl->u.r.field;
     return pfl->type == dbfl_type_ref
         && pfl->u.r.field != NULL
@@ -216,13 +210,13 @@ int value_check_unix(const db_field_log *pfl, const epicsTimeStamp *ts) {
         && ts->nsec == arr[1];
 }
 
-int type_check_string(const db_field_log *pfl) {
+static int type_check_string(const db_field_log *pfl) {
   return pfl->field_type == DBR_STRING
       && pfl->field_size == MAX_STRING_SIZE
       && pfl->no_elements == 1;
 }
 
-int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts) {
     /* We can only verify the type, not the value, because (a) using strptime()
        might be problematic; (b) the pathological value of the timestamp used in
        all tests precludes use of strftime() anyway, so we get an empty
