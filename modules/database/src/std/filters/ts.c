@@ -154,11 +154,6 @@ static db_field_log *replace_fl_value(tsPrivate const *pvt,
     if (pfl->type == dbfl_type_ref && pfl->u.r.dtor) {
         pfl->u.r.dtor(pfl);
     }
-
-    /* Set up the most common type. We can't support unsigned integers, use
-       doubles instead */
-    pfl->field_type = DBF_DOUBLE;
-    pfl->field_size = sizeof(epicsFloat64);
     pfl->no_elements = 1;
     pfl->type = dbfl_type_val;
 
@@ -180,32 +175,36 @@ static void ts_to_array(tsPrivate const *settings,
 static void ts_seconds(tsPrivate const *settings, db_field_log *pfl) {
     epicsUInt32 arr[2];
     ts_to_array(settings, &pfl->time, arr);
-    pfl->u.v.field.dbf_double = arr[0];
+    pfl->field_type = DBF_ULONG;
+    pfl->field_size = sizeof(epicsUInt32);
+    pfl->u.v.field.dbf_ulong = arr[0];
 }
 
 static void ts_nanos(tsPrivate const *settings, db_field_log *pfl) {
     epicsUInt32 arr[2];
     ts_to_array(settings, &pfl->time, arr);
-    pfl->u.v.field.dbf_double = arr[1];
+    pfl->field_type = DBF_ULONG;
+    pfl->field_size = sizeof(epicsUInt32);
+    pfl->u.v.field.dbf_ulong = arr[1];
 }
 
 static void ts_float(tsPrivate const *settings, db_field_log *pfl) {
     epicsUInt32 arr[2];
     ts_to_array(settings, &pfl->time, arr);
+    pfl->field_type = DBF_DOUBLE;
+    pfl->field_size = sizeof(epicsFloat64);
     pfl->u.v.field.dbf_double = arr[0] + arr[1] * 1e-9;
 }
 
 static void ts_array(tsPrivate const *settings, db_field_log *pfl) {
-    epicsUInt32 arr[2];
-    ts_to_array(settings, &pfl->time, arr);
+    pfl->field_type = DBF_ULONG;
+    pfl->field_size = sizeof(epicsUInt32);
     pfl->no_elements = 2;
     pfl->type = dbfl_type_ref;
     pfl->u.r.pvt = NULL;
     pfl->u.r.field = allocTsArray();
     pfl->u.r.dtor = freeTsArray;
-    epicsFloat64 *farr = pfl->u.r.field;
-    farr[0] = arr[0];
-    farr[1] = arr[1];
+    ts_to_array(settings, &pfl->time, (epicsUInt32*)pfl->u.r.field);
 }
 
 static void ts_fmt(tsPrivate const *settings, db_field_log *pfl) {
@@ -282,6 +281,9 @@ static void channelRegisterPost(dbChannel *chan, void *pvt,
         /* fallthrough */
     case tsModeSec:
     case tsModeNsec:
+        probe->field_type = DBF_ULONG;
+        probe->field_size = sizeof(epicsUInt32);
+        break;
     case tsModeFloat:
         probe->field_type = DBF_DOUBLE;
         probe->field_size = sizeof(epicsFloat64);
@@ -320,7 +322,7 @@ static void tsInitialize(void)
 {
     freeListInitPvt(&private_free_list, sizeof(tsPrivate),
                     ALLOC_NUM_ELEMENTS);
-    freeListInitPvt(&ts_array_free_list, 2 * sizeof(epicsFloat64),
+    freeListInitPvt(&ts_array_free_list, 2 * sizeof(epicsUInt32),
                     ALLOC_NUM_ELEMENTS);
     freeListInitPvt(&string_free_list, MAX_STRING_SIZE,
                     ALLOC_NUM_ELEMENTS);
