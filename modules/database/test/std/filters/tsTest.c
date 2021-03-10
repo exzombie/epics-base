@@ -42,19 +42,63 @@ static int fl_equal_ex_ts(const db_field_log *pfl1, const db_field_log *pfl2) {
     return fl_equal(&fl1, pfl2);
 }
 
+static void test_generate_filter(const chFilterPlugin *plug) {
+  dbChannel *pch;
+  chFilter *filter;
+  db_field_log fl1;
+  db_field_log *pfl2;
+  epicsTimeStamp stamp, now;
+  ELLNODE *node;
+  chPostEventFunc *cb_out = NULL;
+  void *arg_out = NULL;
+
+  testOk(!!(pch = dbChannelCreate("x.VAL{ts:{}}")),
+         "dbChannel with plugin ts created");
+  testOk((ellCount(&pch->filters) == 1), "channel has one plugin");
+
+  memset(&fl, PATTERN, sizeof(fl));
+  fl1 = fl;
+  node = ellFirst(&pch->filters);
+  filter = CONTAINER(node, chFilter, list_node);
+  plug->fif->channel_register_pre(filter, &cb_out, &arg_out, &fl1);
+  testOk(!!(cb_out) && !(arg_out),
+         "register_pre registers one filter w/o argument");
+  testOk(fl_equal(&fl1, &fl),
+         "register_pre does not change field_log data type");
+
+  testOk(!(dbChannelOpen(pch)), "dbChannel with plugin ts opened");
+  node = ellFirst(&pch->pre_chain);
+  filter = CONTAINER(node, chFilter, pre_node);
+  testOk((ellCount(&pch->pre_chain) == 1 && filter->pre_arg == NULL),
+         "ts has one filter w/o argument in pre chain");
+  testOk((ellCount(&pch->post_chain) == 0), "ts has no filter in post chain");
+
+  memset(&fl, PATTERN, sizeof(fl));
+  fl1 = fl;
+  pfl2 = dbChannelRunPreChain(pch, &fl1);
+  testOk(pfl2 == &fl1, "ts filter does not drop or replace field_log");
+  testOk(fl_equal_ex_ts(&fl1, pfl2),
+         "ts filter does not change field_log data");
+
+  testOk(!!(pfl2 = db_create_read_log(pch)), "create field log from channel");
+  stamp = pfl2->time;
+  db_delete_field_log(pfl2);
+
+  pfl2 = dbChannelRunPreChain(pch, &fl1);
+  epicsTimeGetCurrent(&now);
+  testOk(epicsTimeDiffInSeconds(&pfl2->time, &stamp) >= 0 &&
+             epicsTimeDiffInSeconds(&now, &pfl2->time) >= 0,
+         "ts filter sets time stamp to \"now\"");
+
+  dbChannelDelete(pch);
+}
+
 MAIN(tsTest)
 {
-    dbChannel *pch;
-    chFilter *filter;
-    const chFilterPlugin *plug;
     char ts[] = "ts";
-    ELLNODE *node;
-    chPostEventFunc *cb_out = NULL;
-    void *arg_out = NULL;
-    db_field_log fl1;
-    db_field_log *pfl2;
-    epicsTimeStamp stamp, now;
     dbEventCtx evtctx;
+    /* const chFilterPlugin *plug */
+const chFilterPlugin *plug;
 
     testPlan(12);
 
@@ -74,41 +118,7 @@ MAIN(tsTest)
 
     testOk(!!(plug = dbFindFilter(ts, strlen(ts))), "plugin ts registered correctly");
 
-    testOk(!!(pch = dbChannelCreate("x.VAL{ts:{}}")), "dbChannel with plugin ts created");
-    testOk((ellCount(&pch->filters) == 1), "channel has one plugin");
-
-    memset(&fl, PATTERN, sizeof(fl));
-    fl1 = fl;
-    node = ellFirst(&pch->filters);
-    filter = CONTAINER(node, chFilter, list_node);
-    plug->fif->channel_register_pre(filter, &cb_out, &arg_out, &fl1);
-    testOk(!!(cb_out) && !(arg_out), "register_pre registers one filter w/o argument");
-    testOk(fl_equal(&fl1, &fl), "register_pre does not change field_log data type");
-
-    testOk(!(dbChannelOpen(pch)), "dbChannel with plugin ts opened");
-    node = ellFirst(&pch->pre_chain);
-    filter = CONTAINER(node, chFilter, pre_node);
-    testOk((ellCount(&pch->pre_chain) == 1 && filter->pre_arg == NULL),
-           "ts has one filter w/o argument in pre chain");
-    testOk((ellCount(&pch->post_chain) == 0), "ts has no filter in post chain");
-
-    memset(&fl, PATTERN, sizeof(fl));
-    fl1 = fl;
-    pfl2 = dbChannelRunPreChain(pch, &fl1);
-    testOk(pfl2 == &fl1, "ts filter does not drop or replace field_log");
-    testOk(fl_equal_ex_ts(&fl1, pfl2), "ts filter does not change field_log data");
-
-    testOk(!!(pfl2 = db_create_read_log(pch)), "create field log from channel");
-    stamp = pfl2->time;
-    db_delete_field_log(pfl2);
-
-    pfl2 = dbChannelRunPreChain(pch, &fl1);
-    epicsTimeGetCurrent(&now);
-    testOk(epicsTimeDiffInSeconds(&pfl2->time, &stamp) >= 0 &&
-        epicsTimeDiffInSeconds(&now, &pfl2->time) >= 0,
-        "ts filter sets time stamp to \"now\"");
-
-    dbChannelDelete(pch);
+    test_generate_filter(plug);
 
     db_close_events(evtctx);
 
