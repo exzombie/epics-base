@@ -237,6 +237,7 @@ MAIN(tsTest) {
     const chFilterPlugin *plug;
 
     char const *test_channels[] = {
+        "x.TIME",
         "x.VAL{ts:{\"num\": \"dbl\"}}",
         "x.VAL{ts:{\"num\": \"sec\"}}",
         "x.VAL{ts:{\"num\": \"nsec\"}}",
@@ -249,6 +250,7 @@ MAIN(tsTest) {
 
     type_check type_checks[] = {
         type_check_double,
+        type_check_double,
         type_check_sec_nsec,
         type_check_sec_nsec,
         type_check_array,
@@ -259,6 +261,7 @@ MAIN(tsTest) {
     };
 
     value_check value_checks[] = {
+        value_check_double,
         value_check_double,
         value_check_sec,
         value_check_nsec,
