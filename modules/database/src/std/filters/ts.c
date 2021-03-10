@@ -36,7 +36,7 @@ enum tsMode {
     tsModeSec = 3,
     tsModeNsec = 4,
     tsModeArray = 5,
-    tsModeFmt = 6,
+    tsModeString = 6,
 };
 
 static const chfPluginEnumType ts_numeric_enum[] = {
@@ -49,29 +49,35 @@ enum tsEpoch {
 
 static const chfPluginEnumType ts_epoch_enum[] = {{"epics", 0}, {"unix", 1}};
 
+enum tsString {
+    tsStringInvalid = 0,
+    tsStringEpics = 1,
+    tsStringIso = 2,
+};
+
+static const chfPluginEnumType ts_string_enum[] = {{"epics", 1}, {"iso", 2}};
+
 typedef struct tsPrivate {
     enum tsMode mode;
     enum tsEpoch epoch;
-    char fmt[MAX_STRING_SIZE];
+    enum tsString str;
 } tsPrivate;
 
 static const chfPluginArgDef ts_args[] = {
     chfEnum(tsPrivate, mode, "num", 0, 0, ts_numeric_enum),
     chfEnum(tsPrivate, epoch, "epoch", 0, 0, ts_epoch_enum),
-    chfString(tsPrivate, fmt, "fmt", 0, 0),
+    chfEnum(tsPrivate, str, "str", 0, 0, ts_string_enum),
     chfPluginArgEnd
 };
 
 static int parse_finished(void *pvt) {
-  tsPrivate *settings = (tsPrivate *)pvt;
-  if (settings->fmt[0] != 0) {
-    settings->mode = tsModeFmt;
-    settings->fmt[MAX_STRING_SIZE - 1] = 0;
-    // TODO check fmt string
-  } else if (settings->mode == tsModeInvalid) {
-    settings->mode = tsModeGenerate;
-  }
-  return 0;
+    tsPrivate *settings = (tsPrivate *)pvt;
+    if (settings->str != tsStringInvalid) {
+        settings->mode = tsModeString;
+    } else if (settings->mode == tsModeInvalid) {
+        settings->mode = tsModeGenerate;
+    }
+    return 0;
 }
 
 
@@ -207,17 +213,29 @@ static void ts_array(tsPrivate const *settings, db_field_log *pfl) {
     ts_to_array(settings, &pfl->time, (epicsUInt32*)pfl->u.r.field);
 }
 
-static void ts_fmt(tsPrivate const *settings, db_field_log *pfl) {
-    assert(settings->fmt[MAX_STRING_SIZE - 1] == 0);
-    // TODO
-    static char const *nimpl = "NOT IMPLEMENTED";
+static void ts_string(tsPrivate const *settings, db_field_log *pfl) {
     pfl->field_type = DBF_STRING;
     pfl->field_size = MAX_STRING_SIZE;
     pfl->type = dbfl_type_ref;
     pfl->u.r.pvt = NULL;
     pfl->u.r.field = allocString();
     pfl->u.r.dtor = freeString;
-    strcpy(pfl->u.r.field, nimpl);
+    char const *fmt;
+    switch (settings->str) {
+    case tsStringEpics:
+        fmt = "%Y-%m-%d %H:%M:%S.%06f";
+        break;
+    case tsStringIso:
+        fmt = "%Y-%m-%dT%H:%M:%S.%06f%z";
+        break;
+    case tsStringInvalid:
+        assert(0);
+    }
+    char *field = (char *)pfl->u.r.field;
+    size_t n = epicsTimeToStrftime(field, MAX_STRING_SIZE, fmt, &pfl->time);
+    if (!n) {
+        field[0] = 0;
+    }
 }
 
 static db_field_log *filter(void *pvt, dbChannel *chan, db_field_log *pfl) {
@@ -232,8 +250,8 @@ static db_field_log *filter(void *pvt, dbChannel *chan, db_field_log *pfl) {
         return replace_fl_value(pvt, pfl, ts_nanos);
     case tsModeArray:
         return replace_fl_value(pvt, pfl, ts_array);
-    case tsModeFmt:
-        return replace_fl_value(pvt, pfl, ts_fmt);
+    case tsModeString:
+        return replace_fl_value(pvt, pfl, ts_string);
     case tsModeGenerate:
     case tsModeInvalid:
         assert(0);
@@ -288,7 +306,7 @@ static void channelRegisterPost(dbChannel *chan, void *pvt,
         probe->field_type = DBF_DOUBLE;
         probe->field_size = sizeof(epicsFloat64);
         break;
-    case tsModeFmt:
+    case tsModeString:
         probe->field_type = DBF_STRING;
         probe->field_size = MAX_STRING_SIZE;
         break;
