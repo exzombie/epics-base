@@ -1,4 +1,5 @@
 /*************************************************************************\
+* Copyright (c) 2021 Cosylab d.d
 * Copyright (c) 2010 Brookhaven National Laboratory.
 * Copyright (c) 2010 Helmholtz-Zentrum Berlin
 *     fuer Materialien und Energie GmbH.
@@ -9,6 +10,7 @@
 
 /*
  *  Author: Ralph Lange <Ralph.Lange@bessy.de>
+ *  Author: Jure Varlec <jure.varlec@cosylab.com>
  */
 
 #include <string.h>
