@@ -216,6 +216,23 @@ int value_check_unix(const db_field_log *pfl, const epicsTimeStamp *ts) {
         && ts->nsec == arr[1];
 }
 
+int type_check_string(const db_field_log *pfl) {
+  return pfl->field_type == DBR_STRING
+      && pfl->field_size == MAX_STRING_SIZE
+      && pfl->no_elements == 1;
+}
+
+int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts) {
+    /* We can only verify the type, not the value, because (a) using strptime()
+       might be problematic; (b) the pathological value of the timestamp used in
+       all tests precludes use of strftime() anyway, so we get an empty
+       string. */
+    return pfl->type == dbfl_type_ref
+        && pfl->u.r.field != NULL
+        && pfl->u.r.dtor != NULL
+        && pfl->u.r.pvt == NULL;
+}
+
 MAIN(tsTest) {
     char ts[] = "ts";
     dbEventCtx evtctx;
@@ -229,16 +246,30 @@ MAIN(tsTest) {
         "x.VAL{ts:{\"num\": \"ts\"}}",
         "x.VAL{ts:{\"num\": \"ts\", \"epoch\": \"epics\"}}",
         "x.VAL{ts:{\"num\": \"ts\", \"epoch\": \"unix\"}}",
+        "x.VAL{ts:{\"str\": \"epics\"}}",
+        "x.VAL{ts:{\"str\": \"iso\"}}",
     };
 
     type_check type_checks[] = {
-        type_check_float, type_check_sec_nsec, type_check_sec_nsec,
-        type_check_array, type_check_array,    type_check_array,
+        type_check_float,
+        type_check_sec_nsec,
+        type_check_sec_nsec,
+        type_check_array,
+        type_check_array,
+        type_check_array,
+        type_check_string,
+        type_check_string,
     };
 
     value_check value_checks[] = {
-        value_check_float, value_check_sec,   value_check_nsec,
-        value_check_array, value_check_array, value_check_unix,
+        value_check_float,
+        value_check_sec,
+        value_check_nsec,
+        value_check_array,
+        value_check_array,
+        value_check_unix,
+        value_check_string,
+        value_check_string,
     };
 
     int const num_value_tests = sizeof(test_channels) / sizeof(char *);
