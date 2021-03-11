@@ -230,6 +230,7 @@ static int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts)
 }
 
 MAIN(tsTest) {
+    int i;
     char ts[] = "ts";
     dbEventCtx evtctx;
     /* const chFilterPlugin *plug */
@@ -292,7 +293,7 @@ MAIN(tsTest) {
 
     test_generate_filter(plug);
 
-    for (int i = 0; i < num_value_tests; ++i) {
+    for (i = 0; i < num_value_tests; ++i) {
         test_value_filter(plug, test_channels[i], type_checks[i], value_checks[i]);
     }
 
