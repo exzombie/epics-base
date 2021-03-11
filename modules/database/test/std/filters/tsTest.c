@@ -213,9 +213,9 @@ static int value_check_unix(const db_field_log *pfl, const epicsTimeStamp *ts) {
 }
 
 static int type_check_string(const db_field_log *pfl) {
-  return pfl->field_type == DBR_STRING
-      && pfl->field_size == MAX_STRING_SIZE
-      && pfl->no_elements == 1;
+    return pfl->field_type == DBR_STRING
+        && pfl->field_size == MAX_STRING_SIZE
+        && pfl->no_elements == 1;
 }
 
 static int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts) {

@@ -120,11 +120,11 @@ static void freeString(db_field_log *pfl) {
 
 /* The dtor for waveform data for the case when we have to copy it. */
 static void freeArray(db_field_log *pfl) {
-  /*
-   * The size of the data is different for each channel, and can even
-   * change at runtime, so a freeList doesn't make much sense here.
-   */
-  free(pfl->u.r.field);
+    /*
+     * The size of the data is different for each channel, and can even
+     * change at runtime, so a freeList doesn't make much sense here.
+     */
+    free(pfl->u.r.field);
 }
 
 static db_field_log* generate(void* pvt, dbChannel *chan, db_field_log *pfl) {
@@ -142,7 +142,7 @@ static db_field_log* generate(void* pvt, dbChannel *chan, db_field_log *pfl) {
             dbScanLock(dbChannelRecord(chan));
             dbChannelGetArrayInfo(chan, &pSource, &nSource, &offset);
             dbExtractArray(pSource, pTarget, pfl->field_size,
-                nSource, pfl->no_elements, offset, 1);
+                           nSource, pfl->no_elements, offset, 1);
             pfl->u.r.field = pTarget;
             pfl->u.r.dtor = freeArray;
             pfl->u.r.pvt = pvt;
@@ -170,8 +170,8 @@ static db_field_log *replace_fl_value(tsPrivate const *pvt,
 }
 
 static void ts_to_array(tsPrivate const *settings,
-                 epicsTimeStamp const *ts,
-                 epicsUInt32 arr[2]) {
+                        epicsTimeStamp const *ts,
+                        epicsUInt32 arr[2]) {
     arr[0] = ts->secPastEpoch;
     arr[1] = ts->nsec;
     if (settings->epoch == tsEpochUnix) {
@@ -266,8 +266,8 @@ static db_field_log *filter(void *pvt, dbChannel *chan, db_field_log *pfl) {
 /* Only the "generate" mode is registered for the pre-queue chain as it creates
    it's own timestamp which should be as close to the event as possible */
 static void channelRegisterPre(dbChannel * chan, void *pvt,
-                                 chPostEventFunc **cb_out, void **arg_out,
-                                 db_field_log *probe) {
+                               chPostEventFunc **cb_out, void **arg_out,
+                               db_field_log *probe) {
     tsPrivate *settings = (tsPrivate *)pvt;
     *cb_out = settings->mode == tsModeGenerate ? generate : NULL;
 }
@@ -275,8 +275,8 @@ static void channelRegisterPre(dbChannel * chan, void *pvt,
 /* For other modes, the post-chain is fine as they only manipulate existing
    timestamps */
 static void channelRegisterPost(dbChannel *chan, void *pvt,
-                               chPostEventFunc **cb_out, void **arg_out,
-                               db_field_log *probe) {
+                                chPostEventFunc **cb_out, void **arg_out,
+                                db_field_log *probe) {
     tsPrivate *settings = (tsPrivate *)pvt;
 
     if (settings->mode == tsModeGenerate || settings->mode == tsModeInvalid) {
