@@ -157,14 +157,14 @@ static void test_value_filter(const chFilterPlugin *plug, const char *chan_name,
     dbChannelDelete(pch);
 }
 
-static int type_check_float(const db_field_log *pfl) {
+static int type_check_double(const db_field_log *pfl) {
     return pfl->type == dbfl_type_val
         && pfl->field_type == DBR_DOUBLE
         && pfl->field_size == sizeof(epicsFloat64)
         && pfl->no_elements == 1;
 }
 
-static int value_check_float(const db_field_log *pfl, const epicsTimeStamp *ts) {
+static int value_check_double(const db_field_log *pfl, const epicsTimeStamp *ts) {
     epicsFloat64 flt = pfl->u.v.field.dbf_double;
     epicsFloat64 nsec = (flt - (epicsUInt32)(flt)) * 1e9;
     return ts->secPastEpoch == (epicsUInt32)(flt)
@@ -237,7 +237,7 @@ MAIN(tsTest) {
     const chFilterPlugin *plug;
 
     char const *test_channels[] = {
-        "x.VAL{ts:{\"num\": \"float\"}}",
+        "x.VAL{ts:{\"num\": \"dbl\"}}",
         "x.VAL{ts:{\"num\": \"sec\"}}",
         "x.VAL{ts:{\"num\": \"nsec\"}}",
         "x.VAL{ts:{\"num\": \"ts\"}}",
@@ -248,7 +248,7 @@ MAIN(tsTest) {
     };
 
     type_check type_checks[] = {
-        type_check_float,
+        type_check_double,
         type_check_sec_nsec,
         type_check_sec_nsec,
         type_check_array,
@@ -259,7 +259,7 @@ MAIN(tsTest) {
     };
 
     value_check value_checks[] = {
-        value_check_float,
+        value_check_double,
         value_check_sec,
         value_check_nsec,
         value_check_array,

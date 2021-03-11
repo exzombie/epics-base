@@ -34,7 +34,7 @@
 enum tsMode {
     tsModeInvalid = 0,
     tsModeGenerate = 1,
-    tsModeFloat = 2,
+    tsModeDouble = 2,
     tsModeSec = 3,
     tsModeNsec = 4,
     tsModeArray = 5,
@@ -42,7 +42,7 @@ enum tsMode {
 };
 
 static const chfPluginEnumType ts_numeric_enum[] = {
-    {"float", 2}, {"sec", 3}, {"nsec", 4}, {"ts", 5}};
+    {"dbl", 2}, {"sec", 3}, {"nsec", 4}, {"ts", 5}};
 
 enum tsEpoch {
     tsEpochEpics = 0,
@@ -196,7 +196,7 @@ static void ts_nanos(tsPrivate const *settings, db_field_log *pfl) {
     pfl->u.v.field.dbf_ulong = arr[1];
 }
 
-static void ts_float(tsPrivate const *settings, db_field_log *pfl) {
+static void ts_double(tsPrivate const *settings, db_field_log *pfl) {
     epicsUInt32 arr[2];
     ts_to_array(settings, &pfl->time, arr);
     pfl->field_type = DBF_DOUBLE;
@@ -244,8 +244,8 @@ static db_field_log *filter(void *pvt, dbChannel *chan, db_field_log *pfl) {
     tsPrivate *settings = (tsPrivate *)pvt;
 
     switch (settings->mode) {
-    case tsModeFloat:
-        return replace_fl_value(pvt, pfl, ts_float);
+    case tsModeDouble:
+        return replace_fl_value(pvt, pfl, ts_double);
     case tsModeSec:
         return replace_fl_value(pvt, pfl, ts_seconds);
     case tsModeNsec:
@@ -304,7 +304,7 @@ static void channelRegisterPost(dbChannel *chan, void *pvt,
         probe->field_type = DBF_ULONG;
         probe->field_size = sizeof(epicsUInt32);
         break;
-    case tsModeFloat:
+    case tsModeDouble:
         probe->field_type = DBF_DOUBLE;
         probe->field_size = sizeof(epicsFloat64);
         break;
