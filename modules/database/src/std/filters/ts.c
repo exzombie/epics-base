@@ -216,13 +216,17 @@ static void ts_array(tsPrivate const *settings, db_field_log *pfl) {
 }
 
 static void ts_string(tsPrivate const *settings, db_field_log *pfl) {
+    char const *fmt;
+    char *field;
+    size_t n;
+
     pfl->field_type = DBF_STRING;
     pfl->field_size = MAX_STRING_SIZE;
     pfl->type = dbfl_type_ref;
     pfl->u.r.pvt = NULL;
     pfl->u.r.field = allocString();
     pfl->u.r.dtor = freeString;
-    char const *fmt;
+
     switch (settings->str) {
     case tsStringEpics:
         fmt = "%Y-%m-%d %H:%M:%S.%06f";
@@ -233,8 +237,9 @@ static void ts_string(tsPrivate const *settings, db_field_log *pfl) {
     case tsStringInvalid:
         assert(0);
     }
-    char *field = (char *)pfl->u.r.field;
-    size_t n = epicsTimeToStrftime(field, MAX_STRING_SIZE, fmt, &pfl->time);
+
+    field = (char *)pfl->u.r.field;
+    n = epicsTimeToStrftime(field, MAX_STRING_SIZE, fmt, &pfl->time);
     if (!n) {
         field[0] = 0;
     }
