@@ -320,8 +320,9 @@ static void channelRegisterPost(dbChannel *chan, void *pvt,
 
 static void channel_report(dbChannel *chan, void *pvt, int level, const unsigned short indent)
 {
-    // TODO
-    printf("%*sTimestamp (ts)\n", indent, "");
+    tsPrivate *settings = (tsPrivate *)pvt;
+    printf("%*sTimestamp (ts): mode: %d, epoch: %d, str: %d\n",
+           indent, "", settings->mode, settings->epoch, settings->str);
 }
 
 static chfPluginIf pif = {
