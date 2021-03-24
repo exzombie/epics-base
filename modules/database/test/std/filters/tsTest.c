@@ -28,7 +28,13 @@
 #include "testMain.h"
 #include "osiFileName.h"
 
+/* A fill pattern for setting a field log to something "random". */
 #define PATTERN 0x55
+
+/* Use a "normal" timestamp for testing. What results from filling the field log
+   with the above pattern is a timestamp that causes problems with
+   epicsTimeToStrftime() on some platforms. */
+static epicsTimeStamp const test_ts = { 616600420, 998425354 };
 
 typedef int (*type_check)(const db_field_log *pfl);
 typedef int (*value_check)(const db_field_log *pfl, const epicsTimeStamp *ts);
@@ -44,6 +50,11 @@ static int fl_equal_ex_ts(const db_field_log *pfl1, const db_field_log *pfl2) {
 
     fl1.time = pfl2->time;
     return fl_equal(&fl1, pfl2);
+}
+
+static void fl_reset(db_field_log *pfl) {
+    memset(pfl, PATTERN, sizeof(*pfl));
+    pfl->time = test_ts;
 }
 
 static void test_generate_filter(const chFilterPlugin *plug) {
@@ -64,7 +75,7 @@ static void test_generate_filter(const chFilterPlugin *plug) {
            "dbChannel with plugin ts created");
     testOk((ellCount(&pch->filters) == 1), "channel has one plugin");
 
-    memset(&fl, PATTERN, sizeof(fl));
+    fl_reset(&fl);
     fl1 = fl;
     node = ellFirst(&pch->filters);
     filter = CONTAINER(node, chFilter, list_node);
@@ -82,7 +93,7 @@ static void test_generate_filter(const chFilterPlugin *plug) {
            "ts has one filter w/o argument in pre chain");
     testOk((ellCount(&pch->post_chain) == 0), "ts has no filter in post chain");
 
-    memset(&fl, PATTERN, sizeof(fl));
+    fl_reset(&fl);
     fl1 = fl;
     pfl2 = dbChannelRunPreChain(pch, &fl1);
     testOk(pfl2 == &fl1, "ts filter does not drop or replace field_log");
@@ -120,7 +131,7 @@ static void test_value_filter(const chFilterPlugin *plug, const char *chan_name,
            "dbChannel with plugin ts created");
     testOk((ellCount(&pch->filters) == 1), "channel has one plugin");
 
-    memset(&fl, PATTERN, sizeof(fl));
+    fl_reset(&fl);
     fl.type = dbfl_type_val;
     node = ellFirst(&pch->filters);
     filter = CONTAINER(node, chFilter, list_node);
@@ -137,12 +148,8 @@ static void test_value_filter(const chFilterPlugin *plug, const char *chan_name,
            "ts has one filter with argument in post chain");
     testOk((ellCount(&pch->pre_chain) == 0), "ts has no filter in pre chain");
 
-    memset(&fl, PATTERN, sizeof(fl));
+    fl_reset(&fl);
     fl.type = dbfl_type_val;
-    fl.time.nsec &= 0x3bffffff;
-    if (fl.time.nsec > 999999999) {
-        fl.time.nsec = 999999999;
-    }
     ts = fl.time;
     fl2 = fl;
     pfl = dbChannelRunPostChain(pch, &fl);
@@ -219,10 +226,8 @@ static int type_check_string(const db_field_log *pfl) {
 }
 
 static int value_check_string(const db_field_log *pfl, const epicsTimeStamp *ts) {
-    /* We can only verify the type, not the value, because (a) using strptime()
-       might be problematic; (b) the pathological value of the timestamp used in
-       all tests precludes use of strftime() anyway, so we get an empty
-       string. */
+    /* We can only verify the type, not the value, because using strptime()
+       might be problematic. */
     return pfl->type == dbfl_type_ref
         && pfl->u.r.field != NULL
         && pfl->u.r.dtor != NULL
