@@ -21,6 +21,7 @@ cache:
 init:
   # Set autocrlf to make batch files work
   - git config --global core.autocrlf true
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 # Set clone depth (do not fetch complete history)
 clone_depth: 5
@@ -112,6 +113,7 @@ on_finish:
 
 on_failure:
   - cmd: python -m ci_core_dumper report
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 #---------------------------------#
 #         debugging               #
