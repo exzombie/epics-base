@@ -199,8 +199,12 @@ size_t epicsStdCall epicsTimeToStrftime (char *pBuff, size_t bufLength, const ch
         if ( strftimePrefixBuf[0] != '\0' ) {
             tm tm;
             (void)epicsTimeToTM(&tm, 0, pTS);
+            printf("cur %ld left %lu\n", pBufCur - pBuff, bufLenLeft);
+            fflush(stdout);
             size_t strftimeNumChar = :: strftime (
                 pBufCur, bufLenLeft, strftimePrefixBuf, &tm );
+            printf("num %lu\n", strftimeNumChar);
+            fflush(stdout);
             pBufCur [ strftimeNumChar ] = '\0';
             pBufCur += strftimeNumChar;
             bufLenLeft -= strftimeNumChar;
