@@ -239,8 +239,14 @@ static void ts_string(tsPrivate const *settings, db_field_log *pfl) {
     }
 
     field = (char *)pfl->u.r.field;
+    puts("Pre-strftime");
+    fflush(stdout);
     n = epicsTimeToStrftime(field, MAX_STRING_SIZE, fmt, &pfl->time);
+    printf("Post-strftime, len=%d\n", n);
+    fflush(stdout);
     if (!n) {
+        puts("Truncate");
+        fflush(stdout);
         field[0] = 0;
     }
 }
