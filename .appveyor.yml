@@ -45,9 +45,6 @@ image: Visual Studio 2015
 
 # Build Configurations: dll/static, regular/debug
 configuration:
-  - dynamic
-  - static
-  - dynamic-debug
   - static-debug
 
 # Environment variables: compiler toolchain, base version, setup file, ...
@@ -58,21 +55,13 @@ environment:
   EPICS_TEST_IMPRECISE_TIMING: YES
 
   matrix:
-  - CMP: vs2019
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-  - CMP: vs2017
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-  - CMP: vs2015
-  - CMP: vs2013
   - CMP: vs2012
-  - CMP: vs2010
   - CMP: gcc
     APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 
 # Platform: processor architecture
 platform:
   - x86
-  - x64
 
 # Matrix configuration: exclude sets of jobs
 matrix:
@@ -141,7 +130,7 @@ notifications:
 
   - provider: Email
     to:
-      - core-talk@aps.anl.gov
+      - jure.varlec@cosylab.com
     on_build_success: false
 
   - provider: GitHubPullRequest
