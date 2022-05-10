@@ -448,14 +448,33 @@ static long parseArrayRange(dbChannel* chan, const char *pname, const char **ppn
 dbChannel * dbChannelCreate(const char *name)
 {
     const char *pname = name;
+    size_t namelen;
     DBENTRY dbEntry;
     dbChannel *chan = NULL;
-    char *cname;
+    char *cname = NULL;
     dbAddr *paddr;
     long status;
 
     if (!name || !*name || !pdbbase)
         return NULL;
+
+    /* If the timestamp filter is available, intercept requests for the TIME
+       field and replace the field with a channel filter string. */
+    namelen = strlen(name);
+    if (namelen > 5 && !strcmp(name + namelen - 5, ".TIME") && dbFindFilter("ts", 2)) {
+        static char const *tsfilter = ".{\"ts\":{\"num\":\"dbl\"}}";
+        cname = malloc(namelen - 5 + strlen(tsfilter) + 1);
+        if (!cname)
+            goto finish;
+        strncpy(cname, name, namelen - 5);
+        strcpy(cname + namelen - 5, tsfilter);
+        pname = cname;
+    } else {
+        cname = malloc(namelen + 1);
+        if (!cname)
+            goto finish;
+        strcpy(cname, name);
+    }
 
     status = pvNameLookup(&dbEntry, &pname);
     if (status)
@@ -464,12 +483,9 @@ dbChannel * dbChannelCreate(const char *name)
     chan = freeListCalloc(dbChannelFreeList);
     if (!chan)
         goto finish;
-    cname = malloc(strlen(name) + 1);
-    if (!cname)
-        goto finish;
 
-    strcpy(cname, name);
     chan->name = cname;
+    cname = NULL;
     ellInit(&chan->filters);
     ellInit(&chan->pre_chain);
     ellInit(&chan->post_chain);
@@ -527,6 +543,8 @@ finish:
         dbChannelDelete(chan);
         chan = NULL;
     }
+    if (cname)
+        free(cname);
     dbFinishEntry(&dbEntry);
     return chan;
 }
