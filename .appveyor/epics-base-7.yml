@@ -1,13 +1,6 @@
 # Appveyor configuration file for EPICS Base 7 builds
 # (see also https://github.com/epics-base/ci-scripts)
 
-# branches to build
-branches:
-  # whitelist
-  only:
-    - 7.0
-    - /R7\.0\.\d+.*/
-
 # Version format
 version: base-{branch}-{build}
 
@@ -147,7 +140,7 @@ notifications:
 
   - provider: Email
     to:
-      - core-talk@aps.anl.gov
+      - jure.varlec@cosylab.com
     on_build_success: false
 
   - provider: GitHubPullRequest
